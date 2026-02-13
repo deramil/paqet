@@ -28,18 +28,10 @@ type Network struct {
 
 func (n *Network) setDefaults(role string) {
 	if n.TxProto == "" {
-		if role == "server" {
-			n.TxProto = "udp"
-		} else {
-			n.TxProto = "tcp"
-		}
+		n.TxProto = "tcp"
 	}
 	if n.RxProto == "" {
-		if role == "server" {
-			n.RxProto = "tcp"
-		} else {
-			n.RxProto = "udp"
-		}
+		n.RxProto = "tcp"
 	}
 
 	n.PCAP.setDefaults(role)

@@ -23,8 +23,9 @@ network:
   interface: "en0"                          # CHANGE ME: Network interface (en0, eth0, wlan0, etc.)
   # guid: "\Device\NPF_{...}"               # Windows only (Npcap).
 
-  tx_proto: "tcp"                          # Outbound carrier (client -> server)
-  rx_proto: "udp"                          # Return carrier (server -> client): TCP-over-UDP path
+  # Optional carrier overrides (default: both "tcp")
+  # tx_proto: "tcp"                        # Outbound carrier (client -> server)
+  # rx_proto: "udp"                        # Return carrier (server -> client): TCP-over-UDP path
 
   # IPv4 configuration
   ipv4:
