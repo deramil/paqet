@@ -17,6 +17,9 @@ network:
   interface: "eth0"                          # CHANGE ME: Network interface (eth0, ens3, en0, etc.)
   # guid: "\Device\NPF_{...}"                # Windows only (Npcap).
 
+  tx_proto: "udp"                          # Return carrier (server -> client): TCP-over-UDP path
+  rx_proto: "tcp"                          # Outbound carrier received from client
+
   # IPv4 configuration
   ipv4:
     addr: "10.0.0.100:9999"                  # CHANGE ME: Server IPv4 and port (port must match listen.addr)
