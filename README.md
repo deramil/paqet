@@ -92,6 +92,9 @@ socks5:
 network:
   interface: "en0" # CHANGE ME: Network interface (en0, eth0, wlan0, etc.)
   # guid: "\Device\NPF_{...}" # Windows only (Npcap).
+  # Optional carrier overrides (default: both "tcp")
+  # tx_proto: "tcp" # outbound carrier (client -> server)
+  # rx_proto: "udp" # return carrier (server -> client), enables TCP-over-UDP
   ipv4:
     addr: "192.168.1.100:0" # CHANGE ME: Local IP (use port 0 for random port)
     router_mac: "aa:bb:cc:dd:ee:ff" # CHANGE ME: Gateway/router MAC address
@@ -125,6 +128,9 @@ listen:
 # Network interface settings
 network:
   interface: "eth0" # CHANGE ME: Network interface (eth0, ens3, en0, etc.)
+  # Optional carrier overrides (default: both "tcp")
+  # tx_proto: "udp" # return carrier (server -> client), for TCP-over-UDP
+  # rx_proto: "tcp" # inbound carrier from client
   ipv4:
     addr: "10.0.0.100:9999" # CHANGE ME: Server IPv4 and port (port must match listen.addr)
     router_mac: "aa:bb:cc:dd:ee:ff" # CHANGE ME: Gateway/router MAC address

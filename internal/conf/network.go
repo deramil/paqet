@@ -16,6 +16,8 @@ type Addr struct {
 type Network struct {
 	Interface_ string         `yaml:"interface"`
 	GUID       string         `yaml:"guid"`
+	TxProto    string         `yaml:"tx_proto"`
+	RxProto    string         `yaml:"rx_proto"`
 	IPv4       Addr           `yaml:"ipv4"`
 	IPv6       Addr           `yaml:"ipv6"`
 	PCAP       PCAP           `yaml:"pcap"`
@@ -25,6 +27,13 @@ type Network struct {
 }
 
 func (n *Network) setDefaults(role string) {
+	if n.TxProto == "" {
+		n.TxProto = "tcp"
+	}
+	if n.RxProto == "" {
+		n.RxProto = "tcp"
+	}
+
 	n.PCAP.setDefaults(role)
 	n.TCP.setDefaults()
 }
@@ -74,6 +83,13 @@ func (n *Network) validate() []error {
 
 	errors = append(errors, n.PCAP.validate()...)
 	errors = append(errors, n.TCP.validate()...)
+
+	if n.TxProto != "tcp" && n.TxProto != "udp" {
+		errors = append(errors, fmt.Errorf("network tx_proto must be 'tcp' or 'udp'"))
+	}
+	if n.RxProto != "tcp" && n.RxProto != "udp" {
+		errors = append(errors, fmt.Errorf("network rx_proto must be 'tcp' or 'udp'"))
+	}
 
 	return errors
 }
