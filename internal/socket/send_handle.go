@@ -25,6 +25,7 @@ type TCPF struct {
 
 type SendHandle struct {
 	handle      *pcap.Handle
+	txProto     string
 	srcIPv4     net.IP
 	srcIPv4RHWA net.HardwareAddr
 	srcIPv6     net.IP
@@ -39,6 +40,7 @@ type SendHandle struct {
 	ipv4Pool    sync.Pool
 	ipv6Pool    sync.Pool
 	tcpPool     sync.Pool
+	udpPool     sync.Pool
 	bufPool     sync.Pool
 }
 
@@ -71,6 +73,7 @@ func NewSendHandle(cfg *conf.Network) (*SendHandle, error) {
 
 	sh := &SendHandle{
 		handle:     handle,
+		txProto:    cfg.TxProto,
 		srcPort:    uint16(cfg.Port),
 		synOptions: synOptions,
 		ackOptions: ackOptions,
@@ -96,6 +99,11 @@ func NewSendHandle(cfg *conf.Network) (*SendHandle, error) {
 				return &layers.TCP{}
 			},
 		},
+		udpPool: sync.Pool{
+			New: func() any {
+				return &layers.UDP{}
+			},
+		},
 		bufPool: sync.Pool{
 			New: func() any {
 				return gopacket.NewSerializeBuffer()
@@ -113,6 +121,13 @@ func NewSendHandle(cfg *conf.Network) (*SendHandle, error) {
 	return sh, nil
 }
 
+func (h *SendHandle) ipProto() layers.IPProtocol {
+	if h.txProto == "udp" {
+		return layers.IPProtocolUDP
+	}
+	return layers.IPProtocolTCP
+}
+
 func (h *SendHandle) buildIPv4Header(dstIP net.IP) *layers.IPv4 {
 	ip := h.ipv4Pool.Get().(*layers.IPv4)
 	*ip = layers.IPv4{
@@ -121,7 +136,7 @@ func (h *SendHandle) buildIPv4Header(dstIP net.IP) *layers.IPv4 {
 		TOS:      184,
 		TTL:      64,
 		Flags:    layers.IPv4DontFragment,
-		Protocol: layers.IPProtocolTCP,
+		Protocol: h.ipProto(),
 		SrcIP:    h.srcIPv4,
 		DstIP:    dstIP,
 	}
@@ -134,7 +149,7 @@ func (h *SendHandle) buildIPv6Header(dstIP net.IP) *layers.IPv6 {
 		Version:      6,
 		TrafficClass: 184,
 		HopLimit:     64,
-		NextHeader:   layers.IPProtocolTCP,
+		NextHeader:   h.ipProto(),
 		SrcIP:        h.srcIPv6,
 		DstIP:        dstIP,
 	}
@@ -187,28 +202,49 @@ func (h *SendHandle) Write(payload []byte, addr *net.UDPAddr) error {
 	dstPort := uint16(addr.Port)
 
 	f := h.getClientTCPF(dstIP, dstPort)
-	tcpLayer := h.buildTCPHeader(dstPort, f)
-	defer h.tcpPool.Put(tcpLayer)
 
 	var ipLayer gopacket.SerializableLayer
+	var trLayer gopacket.SerializableLayer
 	if dstIP.To4() != nil {
 		ip := h.buildIPv4Header(dstIP)
 		defer h.ipv4Pool.Put(ip)
 		ipLayer = ip
-		tcpLayer.SetNetworkLayerForChecksum(ip)
+		if h.txProto == "udp" {
+			udp := h.udpPool.Get().(*layers.UDP)
+			*udp = layers.UDP{SrcPort: layers.UDPPort(h.srcPort), DstPort: layers.UDPPort(dstPort)}
+			udp.SetNetworkLayerForChecksum(ip)
+			defer h.udpPool.Put(udp)
+			trLayer = udp
+		} else {
+			tcp := h.buildTCPHeader(dstPort, f)
+			tcp.SetNetworkLayerForChecksum(ip)
+			defer h.tcpPool.Put(tcp)
+			trLayer = tcp
+		}
 		ethLayer.DstMAC = h.srcIPv4RHWA
 		ethLayer.EthernetType = layers.EthernetTypeIPv4
 	} else {
 		ip := h.buildIPv6Header(dstIP)
 		defer h.ipv6Pool.Put(ip)
 		ipLayer = ip
-		tcpLayer.SetNetworkLayerForChecksum(ip)
+		if h.txProto == "udp" {
+			udp := h.udpPool.Get().(*layers.UDP)
+			*udp = layers.UDP{SrcPort: layers.UDPPort(h.srcPort), DstPort: layers.UDPPort(dstPort)}
+			udp.SetNetworkLayerForChecksum(ip)
+			defer h.udpPool.Put(udp)
+			trLayer = udp
+		} else {
+			tcp := h.buildTCPHeader(dstPort, f)
+			tcp.SetNetworkLayerForChecksum(ip)
+			defer h.tcpPool.Put(tcp)
+			trLayer = tcp
+		}
 		ethLayer.DstMAC = h.srcIPv6RHWA
 		ethLayer.EthernetType = layers.EthernetTypeIPv6
 	}
 
 	opts := gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}
-	if err := gopacket.SerializeLayers(buf, opts, ethLayer, ipLayer, tcpLayer, gopacket.Payload(payload)); err != nil {
+	if err := gopacket.SerializeLayers(buf, opts, ethLayer, ipLayer, trLayer, gopacket.Payload(payload)); err != nil {
 		return err
 	}
 	return h.handle.WritePacketData(buf.Bytes())

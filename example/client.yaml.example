@@ -23,6 +23,9 @@ network:
   interface: "en0"                          # CHANGE ME: Network interface (en0, eth0, wlan0, etc.)
   # guid: "\Device\NPF_{...}"               # Windows only (Npcap).
 
+  tx_proto: "tcp"                          # Outbound carrier (client -> server)
+  rx_proto: "udp"                          # Return carrier (server -> client): TCP-over-UDP path
+
   # IPv4 configuration
   ipv4:
     addr: "192.168.1.100:0"                 # CHANGE ME: Local IP (use port 0 for random port)
