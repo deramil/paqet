@@ -18,8 +18,9 @@ network:
   # guid: "\Device\NPF_{...}"                # Windows only (Npcap).
 
   # Optional carrier overrides (default: both "tcp")
-  # tx_proto: "udp"                        # Return carrier (server -> client): TCP-over-UDP path
-  # rx_proto: "tcp"                        # Outbound carrier received from client
+  # Asymmetric download profile (paired with client tx=tcp/rx=udp):
+  # tx_proto: "udp"                        # Return/download carrier (server -> client)
+  # rx_proto: "tcp"                        # Inbound carrier from client
 
   # IPv4 configuration
   ipv4:

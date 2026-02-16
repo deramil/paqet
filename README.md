@@ -178,6 +178,45 @@ sudo iptables -t filter -A OUTPUT -p tcp --sport <PORT> -j ACCEPT
 
 These rules ensure that only the application handles traffic for the connection port.
 
+### Asymmetric Tunnel: TCP Upload + UDP Download (Dedicated UDP Route)
+
+If your uplink path is limited but downlink UDP is unrestricted, you can split carriers so upload traffic stays on TCP and return/download traffic uses UDP.
+
+Use this pair on both sides:
+
+- **Client**
+  - `network.tx_proto: "tcp"`
+  - `network.rx_proto: "udp"`
+- **Server**
+  - `network.tx_proto: "udp"`
+  - `network.rx_proto: "tcp"`
+
+This changes only the **packet carrier** direction. KCP remains the same transport session, so stream semantics and tunnel behavior stay unchanged.
+
+#### Optional: Force UDP Return Packets Through a Dedicated Route (Linux)
+
+To keep the return path isolated, use policy routing for the server's UDP carrier packets on the tunnel port.
+
+```bash
+# Example values
+PORT=9999
+UDP_TABLE=200
+UDP_GW=203.0.113.1
+UDP_DEV=eth1
+
+# 1) Mark only paqet return-carrier packets (server -> client, UDP source port = tunnel port)
+sudo iptables -t mangle -A OUTPUT -p udp --sport ${PORT} -j MARK --set-mark 0x66
+
+# 2) Route marked packets via a dedicated table
+sudo ip rule add fwmark 0x66 table ${UDP_TABLE}
+sudo ip route add default via ${UDP_GW} dev ${UDP_DEV} table ${UDP_TABLE}
+
+# 3) Keep reverse path stable (recommended when policy routing is used)
+sudo ip route flush cache
+```
+
+With this setup, only UDP return-carrier packets are moved to the dedicated route, while normal host traffic and client->server carrier traffic are unaffected.
+
 ### 3. Run `paqet`
 
 Make the downloaded binary executable (`chmod +x ./paqet_linux_amd64`). You will need root privileges to use raw sockets.
