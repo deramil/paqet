@@ -30,6 +30,39 @@
   - **macOS:** Comes pre-installed with Xcode Command Line Tools. Install with `xcode-select --install`
   - **Windows:** Install Npcap. Download from [npcap.com](https://npcap.com/).
 
+### Build from Source (آموزش بیلد از سورس)
+
+If you prefer building `paqet` yourself instead of downloading a release binary, use the steps below.
+
+1. Clone the repository and enter the project directory:
+
+   ```bash
+   git clone <repository-url>
+   cd paqet
+   ```
+
+2. Build for your current OS/architecture:
+
+   ```bash
+   go build -o paqet ./cmd
+   ```
+
+3. (Optional) Build for a specific target OS/architecture:
+
+   ```bash
+   # Linux AMD64 example
+   GOOS=linux GOARCH=amd64 go build -o paqet_linux_amd64 ./cmd
+
+   # macOS ARM64 example
+   GOOS=darwin GOARCH=arm64 go build -o paqet_darwin_arm64 ./cmd
+   ```
+
+4. Verify the built binary:
+
+   ```bash
+   ./paqet version
+   ```
+
 ### 1. Download a Release
 
 Download the pre-compiled binary for your client and server operating systems from the project's **Releases page**.
