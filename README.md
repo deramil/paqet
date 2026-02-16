@@ -44,6 +44,13 @@ If you prefer building `paqet` yourself instead of downloading a release binary,
 2. Build for your current OS/architecture:
 
    ```bash
+   # Full packet capture/injection support (requires libpcap/Npcap headers)
+   go build -tags pcap -o paqet ./cmd
+   ```
+
+   If you only need the non-pcap commands, you can build without tags:
+
+   ```bash
    go build -o paqet ./cmd
    ```
 
@@ -51,10 +58,10 @@ If you prefer building `paqet` yourself instead of downloading a release binary,
 
    ```bash
    # Linux AMD64 example
-   GOOS=linux GOARCH=amd64 go build -o paqet_linux_amd64 ./cmd
+   GOOS=linux GOARCH=amd64 go build -tags pcap -o paqet_linux_amd64 ./cmd
 
    # macOS ARM64 example
-   GOOS=darwin GOARCH=arm64 go build -o paqet_darwin_arm64 ./cmd
+   GOOS=darwin GOARCH=arm64 go build -tags pcap -o paqet_darwin_arm64 ./cmd
    ```
 
 4. Verify the built binary:

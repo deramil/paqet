@@ -1,3 +1,5 @@
+//go:build pcap
+
 package dump
 
 import (
